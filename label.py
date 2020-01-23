@@ -15,13 +15,17 @@ DPI = 300
 PAPERSIZE_IN = (8.5, 11)
 MARGIN_IN = 0.25
 THUMBSIZE_IN = (0.25, 0.25)
-LABELSIZE_IN = (1.5, 0.99)
+CONTAINER_THUMBSIZE_IN = (0.5, 0.5)
+LABELSIZE_IN = (1.5, 0.99)  # SIZE OF INDIVIDUAL PART LABELS
+CONTAINER_LABELSIZE_IN = (2, 2)  # SIZE OF CONTAINER LABELS
 FONT_HEAD_SIZE_IN = 0.22  # HEADER TEXT
 FONT_SUB_SIZE_IN = 0.1  # SUBTEXT
 
 # Convert inch sizes to pixels
 THUMBSIZE = tuple(int(s * DPI) for s in THUMBSIZE_IN)
 LABELSIZE = tuple(int(s * DPI) for s in LABELSIZE_IN)
+CONTAINER_LABELSIZE = tuple(int(s * DPI) for s in CONTAINER_LABELSIZE_IN)
+CONTAINER_THUMBSIZE = tuple(int(s * DPI) for s in CONTAINER_THUMBSIZE_IN)
 PAPERSIZE = tuple(int(s * DPI) for s in PAPERSIZE_IN)
 MARGIN = int(MARGIN_IN * DPI)
 FONT_HEAD = ImageFont.truetype("SourceSansPro-Semibold.ttf", int(FONT_HEAD_SIZE_IN * DPI))
@@ -45,6 +49,8 @@ def load_img_folder(path):
             img = Image.open(os.path.join(path, imfile))
             fname_to_img[fname] = img.convert("RGBA")
     return fname_to_img
+
+
 
 
 def load_csv(fname):
@@ -97,6 +103,9 @@ def pretty_item(item):
     return Item(**{k: to_unifrac(v) for k, v in item._asdict().items()})
 
 
+def _center(obj, canvas):
+    return int((canvas - obj) / 2)
+
 def _center_text_w(font: ImageFont, text: str, canvas_width: int):
     """Return the X coordinate required to center text on canvas of a given width
 
@@ -105,21 +114,19 @@ def _center_text_w(font: ImageFont, text: str, canvas_width: int):
 
     """
     textw = font.getsize(text)[0]
-    return int((canvas_width / 2) - (textw / 2))
+    return _center(textw, canvas_width)
 
 
 def _center_im_w(im: Image, canvas_width: int):
-    return int(canvas_width / 2 - im.size[0] / 2)
-
+    return _center(im.size[0], canvas_width)
 
 def _snap_y(y, incr=1):
     return incr * math.ceil(y/incr)
 
 def make_label(item: Item, fout: str):
     canvas = Image.new("RGBA", LABELSIZE, color=(255, 255, 255))
-    cati = CAT_IMS.get(item.category)
-    cati.thumbnail(THUMBSIZE)
     subi = SUBCAT_IMS.get("_".join([item.category, item.subcat]))
+    # TODO: thumbnail a copy
     subi.thumbnail(THUMBSIZE)
 
     # Draw from top down, tracking vertical offset 'y'
@@ -146,6 +153,57 @@ def make_label(item: Item, fout: str):
     # font = ImageFont.load_default()
     canvas.save(fout)
     return canvas
+
+def make_container_label(items : list, fout : str):
+    """Make a label for a container of multiple items. Picture of all item categories, text of all item sizes.
+
+    Args:
+        items (list[Item]):
+
+    Returns:
+
+    """
+    container_cats = set(i.category for i in items)
+    container_subcats = set((i.category, i.subcat) for i in items)
+    container_diams = set(_diam_from_gauge(i.gauge) for i in items)
+    print(container_cats)
+    print(container_subcats)
+    print(container_diams)
+
+    # Draw primary category images
+    y = 2
+    canvas = Image.new("RGBA", CONTAINER_LABELSIZE, color=(255, 255, 255))
+    catis = [CAT_IMS.get(c) for c in container_cats if CAT_IMS.get(c)]
+    for ci in catis:
+        # TODO: thumbnail a copy
+        ci.thumbnail(CONTAINER_THUMBSIZE)
+    x_total = sum(ci.size[0] for ci in catis) + (len(catis) - 1) * 20
+    x = _center(x_total, canvas.size[0])
+    print(x, x_total, canvas.size[0])
+    for ci in catis:
+        # TODO: thumbnail a copy
+        canvas.paste(ci, (x, y))
+        x += ci.size[0] + 20
+    y  = max(ci.size[1] for ci in catis) + 10
+
+    # Draw subcat images
+    # x = 0
+    # subis = [SUBCAT_IMS.get("_".join(c)) for c in container_subcats if SUBCAT_IMS.get("_".join(c))]
+    # for ci in subis:
+    #     ci.thumbnail(THUMBSIZE)
+    #     canvas.paste(ci, (x, y))
+    #     x += ci.size[0]
+
+    draw = ImageDraw.Draw(canvas)
+    diams_text = ",  ".join(container_diams)
+    textw = _center_text_w(FONT_HEAD, diams_text, canvas.size[0])
+    draw.text((textw, y), diams_text, fill=(0, 0, 0, 255), font=FONT_HEAD)
+
+    canvas.save(fout)
+    return canvas
+
+def _diam_from_gauge(gauge):
+    return gauge.split("-")[0]
 
 
 items = load_items(INDIR)
@@ -194,6 +252,9 @@ def summarize_inventory(items):
     # washers = [i for i in items if "washer" in i.category]
     # washer_diameters = set([w.gauge for w in washers])
 
+
+example_container = [i for i in items if i.gauge in ("M3", "M4")]
+container_img = make_container_label(example_container, "container_label.png")
 
 summarize_inventory(items)
 
