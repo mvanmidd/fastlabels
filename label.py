@@ -32,12 +32,8 @@ FONT_HEAD = ImageFont.truetype("SourceSansPro-Semibold.ttf", int(FONT_HEAD_SIZE_
 FONT_SUB = ImageFont.truetype("SourceSansPro-Regular.ttf", int(FONT_SUB_SIZE_IN * DPI))
 
 
-def load_img_folder(path):
+def load_img_folder(path: str):
     """
-
-    Args:
-        path:
-
     Returns:
         dict(str, Image): map of fname to img
 
@@ -51,9 +47,12 @@ def load_img_folder(path):
     return fname_to_img
 
 
+def load_csv(fname: str):
+    """Load a single CSV into a list of Items.
 
+    Items must have at least a category, subcat, and gauge (size).
 
-def load_csv(fname):
+    """
     items = []
     with open(fname) as fin:
         reader = csv.DictReader(fin)
@@ -63,7 +62,11 @@ def load_csv(fname):
     return items
 
 
-def load_items(path):
+def load_items(path: str):
+    """Load all items in a path. If path is a single CSV, load it, otherwise assume path is a directory and
+    load all CSVs in the directory.
+
+    """
     if path.endswith(".csv"):
         return load_csv(path)
     else:
@@ -79,7 +82,8 @@ SUBCAT_IMS = load_img_folder("img/subcat")
 
 EXAMPLE_FRAC = "¹⁄₄"
 
-def to_unifrac(text):
+
+def to_unifrac(text: str):
     FRAC = "\u2044"
     SUPS = dict(zip(u"0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹"))
     SUBS = dict(zip(u"0123456789", "₀₁₂₃₄₅₆₇₈₉"))
@@ -99,12 +103,18 @@ def to_unifrac(text):
     return text
 
 
-def pretty_item(item):
+def pretty_item(item: Item):
+    """Make pretty unicode fractions from object text."""
     return Item(**{k: to_unifrac(v) for k, v in item._asdict().items()})
 
 
-def _center(obj, canvas):
+def _center(obj: int, canvas: int):
+    """Center object of a given width along a single dimension on canvas of a given width, return lower bound of
+    object position.
+
+    """
     return int((canvas - obj) / 2)
+
 
 def _center_text_w(font: ImageFont, text: str, canvas_width: int):
     """Return the X coordinate required to center text on canvas of a given width
@@ -120,10 +130,14 @@ def _center_text_w(font: ImageFont, text: str, canvas_width: int):
 def _center_im_w(im: Image, canvas_width: int):
     return _center(im.size[0], canvas_width)
 
-def _snap_y(y, incr=1):
-    return incr * math.ceil(y/incr)
+
+def _snap_y(y: int, incr: int = 1):
+    """Snap to a grid with spacing incr, default is 1 == no-op."""
+    return incr * math.ceil(y / incr)
+
 
 def make_label(item: Item, fout: str):
+    """Make a label for an individual item."""
     canvas = Image.new("RGBA", LABELSIZE, color=(255, 255, 255))
     subi = SUBCAT_IMS.get("_".join([item.category, item.subcat]))
     # TODO: thumbnail a copy
@@ -154,7 +168,8 @@ def make_label(item: Item, fout: str):
     canvas.save(fout)
     return canvas
 
-def make_container_label(items : list, fout : str):
+
+def make_container_label(items: list, fout: str):
     """Make a label for a container of multiple items. Picture of all item categories, text of all item sizes.
 
     Args:
@@ -184,7 +199,7 @@ def make_container_label(items : list, fout : str):
         # TODO: thumbnail a copy
         canvas.paste(ci, (x, y))
         x += ci.size[0] + 20
-    y  = max(ci.size[1] for ci in catis) + 10
+    y = max(ci.size[1] for ci in catis) + 10
 
     # Draw subcat images
     # x = 0
@@ -202,7 +217,8 @@ def make_container_label(items : list, fout : str):
     canvas.save(fout)
     return canvas
 
-def _diam_from_gauge(gauge):
+
+def _diam_from_gauge(gauge: str):
     return gauge.split("-")[0]
 
 
@@ -216,12 +232,13 @@ for i, item in enumerate(items):
     labels.append(label)
 
 
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
+def chunks(lst: list, n: int):
+    """Enumerate successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield int(i / n), lst[i : i + n]
 
-def summarize_inventory(items):
+
+def summarize_inventory(items: list):
     """Print a bunch of stats.
 
     This really would've been better with a dataframe, but hey, using dict as group_by is "pythonic".
@@ -233,10 +250,13 @@ def summarize_inventory(items):
 
     """
     categories = set([i.category for i in items])
-    cat_dict = {cat: [i for i in items if i.category == cat ] for cat in list(categories)}
+    cat_dict = {cat: [i for i in items if i.category == cat] for cat in list(categories)}
     print("{} categories".format(len(cat_dict)))
     for cat, catitems in cat_dict.items():
-        subcat_dict = {subcat: [i for i in items if i.subcat == subcat] for subcat in list(set([ii.subcat for ii in catitems]))}
+        subcat_dict = {
+            subcat: [i for i in items if i.subcat == subcat]
+            for subcat in list(set([ii.subcat for ii in catitems]))
+        }
         summary = ", ".join(["{} {}".format(k, len(v)) for k, v in subcat_dict.items()])
         print("  {}: {}".format(cat, summary))
     screws = [i for i in items if "screw" in i.category]
@@ -244,7 +264,11 @@ def summarize_inventory(items):
     nut_threads = set(i.gauge for i in nuts)
     screws_without_nuts = [scr for scr in screws if scr.gauge not in nut_threads]
     if screws_without_nuts:
-        print("The following screws have no nuts: {}".format(", ".join(set([s.gauge for s in screws_without_nuts]))))
+        print(
+            "The following screws have no nuts: {}".format(
+                ", ".join(set([s.gauge for s in screws_without_nuts]))
+            )
+        )
     # Uncomment to use for your purposes
     # threadeds = screws + nuts
     # thread_sizes = set([i.gauge for i in threadeds])
@@ -262,8 +286,12 @@ summarize_inventory(items)
 l_per_row = math.floor((PAPERSIZE[0] - (2 * MARGIN)) / LABELSIZE[0])
 l_per_col = math.floor((PAPERSIZE[1] - (2 * MARGIN)) / LABELSIZE[1])
 n_pages = math.ceil(len(items) / (l_per_row * l_per_col))
-print("{} labels per page ({} per row X {} per column), {} pages".format(l_per_row * l_per_col, l_per_row, l_per_col, n_pages))
-for pageno, pagelabels in chunks(labels, l_per_col * l_per_row):
+print(
+    "{} labels per page ({} per row X {} per column), {} pages".format(
+        l_per_row * l_per_col, l_per_row, l_per_col, n_pages
+    )
+)
+for pageno, pagelabels in chunks(labels, int(l_per_col * l_per_row)):
     paper = Image.new("RGBA", PAPERSIZE, color=(255, 255, 255))
     for i, label in enumerate(pagelabels):
         col = i % l_per_row
