@@ -1,2 +1,9 @@
+venv/
+*.pyc
+*.egg-info/
+dist/
+settings.cfg
+*.log*
 .idea
-.DS_Store
+*.db
+*.DS_Store
