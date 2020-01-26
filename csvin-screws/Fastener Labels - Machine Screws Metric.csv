@@ -1,0 +1,62 @@
+category,subcat,style,gauge,length,notes
+machine screw,pan head,,M2,6mm,
+nut,hex,,M2,,
+machine screw,socket,,M3,6mm,stainless
+machine screw,socket,,M3,8mm,stainless
+machine screw,socket,,M3,12mm,stainless
+machine screw,socket,,M3,16mm,stainless
+machine screw,socket,,M3,20mm,stainless
+nut,hex,,M3,,stainless
+washer,flat,,M3,,stainless
+,,,,,
+machine screw,socket,,M4,6mm,stainless
+machine screw,socket,,M4,8mm,stainless
+machine screw,socket,,M4,12mm,stainless
+machine screw,socket,,M4,16mm,stainless
+machine screw,socket,,M4,20mm,stainless
+machine screw,socket,,M4,25mm,stainless
+nut,hex,,M4,,stainless
+,,,,,
+,,,,,
+machine screw,socket,,M5,10mm,stainless
+machine screw,socket,,M5,16mm,stainless
+machine screw,socket,,M5,20mm,stainless
+machine screw,socket,,M5,25mm,stainless
+nut,hex,,M5,,stainless
+,,,,,
+,,,,,
+,,,,,
+machine screw,socket,,M6,8mm,stainless
+machine screw,socket,,M6,10mm,stainless
+machine screw,socket,,M6,16mm,stainless
+machine screw,socket,,M6,20mm,stainless
+nut,hex,,M6,,stainless
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+washer,flat nylon,,M2,,
+washer,flat nylon,,M2.5,,
+washer,flat nylon,,M3,,
+washer,flat nylon,,M4,,
+washer,flat nylon,,M5,,
+washer,flat nylon,,M6,,
+washer,flat nylon,,M8,,
+,,,,,
+nut,hex,,M8,,
+,,,,,
+ , ,,M2,,
+ , ,,M2,,
+ , ,,M2,,
+ , ,,M2,,
+ , ,,M3,,
+ , ,,M4,,
+ , ,,M5,,
+ , ,,M6,,
+ , ,,M8,,
+,,,,,
+,,,,,
+ , ,,M3,,
+ , ,,M4,,
+ , ,,M5,,
+ , ,,M6,,

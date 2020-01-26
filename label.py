@@ -1,9 +1,10 @@
 import itertools
 import os
 import math
+import sys
 import csv
 import re
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from PIL import Image, ImageDraw, ImageFont
 
 Item = namedtuple("Item", ["category", "subcat", "style", "gauge", "length", "notes"])
@@ -14,12 +15,21 @@ OUTDIR = "imout"
 DPI = 300
 PAPERSIZE_IN = (8.5, 11)
 MARGIN_IN = 0.25
-THUMBSIZE_IN = (0.25, 0.25)
 CONTAINER_THUMBSIZE_IN = (0.5, 0.5)
-LABELSIZE_IN = (1.5, 0.99)  # SIZE OF INDIVIDUAL PART LABELS
+
+# Works best for wood screw / nail labels
+# THUMBSIZE_IN = (0.75, 0.2)
+# LABELSIZE_IN = (1.8, 1.0)  # SIZE OF INDIVIDUAL PART LABELS
+# FONT_HEAD_SIZE_IN = 0.22  # HEADER TEXT
+# FONT_SUB_SIZE_IN = 0.12  # SUBTEXT
+
+# Worked best for machine screw labels
+THUMBSIZE_IN = (0.75, 0.15)
+LABELSIZE_IN = (1.0, 0.8)  # SIZE OF INDIVIDUAL PART LABELS
+FONT_HEAD_SIZE_IN = 0.17  # HEADER TEXT
+FONT_SUB_SIZE_IN = 0.09  # SUBTEXT
+
 CONTAINER_LABELSIZE_IN = (2, 2)  # SIZE OF CONTAINER LABELS
-FONT_HEAD_SIZE_IN = 0.22  # HEADER TEXT
-FONT_SUB_SIZE_IN = 0.1  # SUBTEXT
 
 # Convert inch sizes to pixels
 THUMBSIZE = tuple(int(s * DPI) for s in THUMBSIZE_IN)
@@ -31,6 +41,7 @@ MARGIN = int(MARGIN_IN * DPI)
 FONT_HEAD = ImageFont.truetype("SourceSansPro-Semibold.ttf", int(FONT_HEAD_SIZE_IN * DPI))
 FONT_SUB = ImageFont.truetype("SourceSansPro-Regular.ttf", int(FONT_SUB_SIZE_IN * DPI))
 
+BLANK_IM = Image.open("img/misc.png").convert("RGBA")
 
 def load_img_folder(path: str):
     """
@@ -38,7 +49,7 @@ def load_img_folder(path: str):
         dict(str, Image): map of fname to img
 
     """
-    fname_to_img = {}
+    fname_to_img = defaultdict(lambda: BLANK_IM)
     for imfile in os.listdir(path):
         if "png" in imfile:
             fname = imfile.replace(".png", "")
@@ -59,10 +70,13 @@ def load_csv(fname: str):
         for row in reader:
             if row["gauge"] and row["category"] and row["subcat"]:
                 items.append(Item(**row))
+            else:
+                print("Ignoring row")
+                print(row)
     return items
 
 
-def load_items(path: str):
+def load_items(path: str=INDIR):
     """Load all items in a path. If path is a single CSV, load it, otherwise assume path is a directory and
     load all CSVs in the directory.
 
@@ -139,7 +153,7 @@ def _snap_y(y: int, incr: int = 1):
 def make_label(item: Item, fout: str):
     """Make a label for an individual item."""
     canvas = Image.new("RGBA", LABELSIZE, color=(255, 255, 255))
-    subi = SUBCAT_IMS.get("_".join([item.category, item.subcat]))
+    subi = SUBCAT_IMS["_".join([item.category, item.subcat])]
     # TODO: thumbnail a copy
     subi.thumbnail(THUMBSIZE)
 
@@ -222,7 +236,7 @@ def _diam_from_gauge(gauge: str):
     return gauge.split("-")[0]
 
 
-items = load_items(INDIR)
+items = load_items(sys.argv[1] if len(sys.argv) > 1 else INDIR)
 print("Loaded {} items".format(len(items)))
 
 labels = []
@@ -278,7 +292,7 @@ def summarize_inventory(items: list):
 
 
 example_container = [i for i in items if i.gauge in ("M3", "M4")]
-container_img = make_container_label(example_container, "container_label.png")
+# container_img = make_container_label(example_container, "container_label.png")
 
 summarize_inventory(items)
 
