@@ -6,7 +6,7 @@ import sys
 import csv
 import re
 from collections import namedtuple, defaultdict
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from itertools import chain
 
 from typing import List
@@ -16,7 +16,7 @@ Item = namedtuple("Item", ["category", "subcat", "style", "gauge", "length", "no
 INDIR = "csvin"
 OUTDIR = "imout"
 
-DPI = 300
+DPI = 900
 MARGIN_IN = (0.1875, 0.5)
 PAPERSIZE_IN = (8.5, 11) # IGNORE RIGHT MARGIN
 CONTAINER_THUMBSIZE_IN = (0.5, 0.5)
@@ -35,7 +35,7 @@ SIMPLE_LABELSIZE_IN = (.875, .95)
 # FONT_HEAD_SIZE_IN = 0.17  # HEADER TEXT
 # FONT_SUB_SIZE_IN = 0.09  # SUBTEXT
 
-CELLSIZE_IN = (2.625, 1.0)  # SIZE OF INDIVIDUAL PART LABELS
+CELLSIZE_IN = (2.625, .95)  # SIZE OF INDIVIDUAL PART LABELS
 CELL_MARGIN_IN = (0.125, 0.05)  # SIZE OF INDIVIDUAL PART LABELS
 
 # Worked best for cable mgmt stuff
@@ -188,13 +188,16 @@ def make_simple_square(img: Image.Image, text, thumbsize=THUMBSIZE, labelsize=LA
     """Label with thumbnail centered, one line of text underneath"""
     canvas = Image.new("RGBA", labelsize, color=(255, 255, 255, 0))
     thumbi = _resize(img.copy(), thumbsize)
+    # thumbi = ImageOps.autocontrast(thumbi)
+    thumbi_hc = ImageOps.equalize(thumbi.convert("RGB"), mask=thumbi.split()[-1]).quantize(colors=12)
     # thumbi.thumbnail(thumbsize)
 
     # Thumbnail on left side
     x = y = int(DPI * (1/16))
     imx = _center_im_w(thumbi, labelsize[0])
     imy = _center(thumbi.size[1], thumbsize[1])
-    canvas.paste(thumbi, (imx, imy), thumbi)
+    canvas.paste(thumbi_hc, (imx, imy), mask=thumbi)
+    # canvas.paste(thumbi, (imx, imy))
     y += thumbsize[1]
     text_x = _center_text_w(font, text, canvas.size[0])
 
